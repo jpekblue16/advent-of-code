@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const readline = require('readline');
 
 const file = readline.createInterface({
-    input: fs.createReadStream('day2_input_test.txt'),
+    input: fs.createReadStream('day2_input.txt'),
     output: process.stdout,
     terminal: false
 });
@@ -13,7 +13,11 @@ const file = readline.createInterface({
 
 var total = 0;
 
-const COLORS = ["red","green","blue"];
+const COLORS = {
+    "red": 12,
+    "green": 13,
+    "blue": 14
+};
 
 const RED_MAX = 12,GREEN_MAX = 13, BLUE_MAX = 14;
 
@@ -53,13 +57,7 @@ function getLineValue(line) {
             var amount = +splitPull[0];
             var color = splitPull[1];
 
-            if (color == "red" && amount > RED_MAX) {
-                isPossible = false;
-            } else if (color == "green" && amount > GREEN_MAX) {
-                isPossible = false;
-            } else if (color == "blue" && amount > BLUE_MAX) {
-                isPossible = false;
-            }
+            isPossible = !isTooMany(amount,color);
 
             if (!isPossible) break; // if game is already impossible, stop
         }
@@ -75,4 +73,11 @@ function getLineValue(line) {
         console.log('game is impossible');
         return 0;
     }
+}
+
+function isTooMany(amount, color) {
+    if (amount > COLORS[color]) {
+        console.log('too many '+color+' cubes: '+amount);
+        return true;
+    } else return false;
 }
