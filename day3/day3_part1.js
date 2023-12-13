@@ -19,7 +19,7 @@ const file = readline.createInterface({
 // }
 
 // array of indexes adjacent to numbers {index: number}
-var prevRowNumbers = new Map(); // <number, <start, end>>
+var prevRowNumbers = []; // {number,start,end,touched}
 
 // array of indexes from previous row adjacent to symbols
 var prevRowSymbols = new Set();
@@ -34,7 +34,7 @@ file.on('line', (line) => {
     console.log(prevRowNumbers);
     console.log(prevRowSymbols);
 
-    var newNumbers = new Map();
+    var newNumbers = [];
     var newSymbols = new Set();
 
     var inNumber = false; // tracks if currently parsing through a number
@@ -95,17 +95,15 @@ file.on('line', (line) => {
     		adjacent = true;
     		
     		// check if symbol is adjacent to any number from the previous row
-    		for (var num of prevRowNumbers.keys()) {
-
-    			var startEnd = prevRowNumbers.get(num); // startEnd is an array of 2 numbers
+    		for (var [index,num] of prevRowNumbers.entries()) {
 
     			// if symbol index is between start and end of number, add number and delete entry
-    			if (startEnd[0] <= i && startEnd[1] >= i) {
+    			if (!num.touched && (num.start <= i && num.end >= i)) {
 
-                    console.log(`prev row number ${num} is adjacent, adding to total`)
+                    console.log(`prev row number ${num.number} is adjacent, adding to total`)
 
-    				total += num;
-    				prevRowNumbers.delete(num); // delete from previous row map so other symbols won't double count the number
+    				total += num.number;
+    				prevRowNumbers[index].touched = true; // delete from previous row map so other symbols won't double count the number
     			}
 
     			// want to continue looping in case symbol is adjacent to multiple numbers
@@ -127,7 +125,8 @@ file.on('line', (line) => {
     			// start and end should include 1 extra index on each side of number
     			else {
                     console.log(`number ${parseInt(tempNum)} not adjacent, adding to map with start/end positions: ${tempNumStart-1} / ${i}`);
-    				newNumbers.set(parseInt(tempNum),new Array(tempNumStart-1,i));
+                    var newNum = { number: parseInt(tempNum), start: tempNumStart-1, end: i, touched: false };
+                    newNumbers.push(newNum);
     			}
     		}
 
@@ -151,7 +150,9 @@ file.on('line', (line) => {
         // start and end should include 1 extra index on each side of number
         else {
             console.log(`number not adjacent, adding to map with start/end positions: ${tempNumStart} / ${i}`);
-            newNumbers.set(parseInt(tempNum),new Array(tempNumStart-1,i));
+
+            var newNum = { number: parseInt(tempNum), start: tempNumStart-1, end: i, touched: false };
+            newNumbers.push(newNum);
         }
     }
 
