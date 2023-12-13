@@ -70,7 +70,7 @@ file.on('line', (line) => {
 
     	}
     	// if symbol is found
-    	else if (/[^0-9.]/.test(c)) {
+    	else if (/[^0-9\.]/.test(c)) {
             console.log(`symbol ${c} found at position ${i}`);
 
     		// if symbol is at the end of a number
