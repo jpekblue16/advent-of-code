@@ -11,92 +11,115 @@ const file = readline.createInterface({
 
 // gear needs exactly 2 part numbers
 
-// array of each number in the previous row with their start/end positions
-var prevRowNumbers = []; // { number,start,end }
+var rows = [];
 
-// array of gears in previous row, with array of adjacent numbers
-var prevRowGears = []; // { pos, numbers[] }
-
-var total = 0;
-var rowNum = 1;
 
 file.on('line', (line) => {
 
-    console.log(`row ${rowNum}: ${line}`);
+    // read file and build matrix
 
-    console.log(prevRowNumbers);
-    console.log(prevRowGears);
+    rows.push(line.split(''));
 
-    var newNumbers = []; // store all numbers from a row with start index-1 and end index+1
-    var newGears = [];
+});
 
-    var inNumber = false; // tracks if currently parsing through a number
-    var tempNum = ''; // holds the number being parsed
-    var tempNumStart = 0;
-    var adjacent = false;
+file.on('close', () => {
+    var total = 0;
 
-    for (var i = 0; i < line.length; ++i) {
+    // process array and find gears with 2 adjacent part #s
+    for (var row = 0; row < rows.length; ++row) {
+        for (var col = 0; col < rows[row].length; ++col) {
+            // if gear, check for numbers
+            var symbol = rows[row][col];
+            if (/\*/.test(symbol)) {
+                console.log(`* found at ${row}, ${col}`);
+                // look for numbers in surrounding tiles
+                var parts = findAdjacentNumbers(row,col);
 
-    	var c = line[i];
-
-    	// if number is found
-    	if (/\d/.test(c)) {
-
-            // if already parsing a number
-            if (inNumber) {
-
-                // concat onto temp number
-                tempNum += c;
-
-            } 
-            // new number is found
-            else {
-                inNumber = true;
-                tempNum = c;
-                tempNumStart = i;
+                // only count gears with 2 numbers
+                if (parts.length == 2) {
+                    total += parseInt(parts[0]) * parseInt(parts[1]);
+                }
             }
+        }
+    }
 
-            // check if number is adjacent to a gear from the previous row
-            for (var gear of prevRowGears) {
-                if (gear.pos-1 <= i && i <= gear.pos+1)
+    console.log("total value is "+total);
+});
+
+/*
+    1 2 3
+    4 * 5
+    6 7 8
+*/
+
+// row, col are the index of the gear (*)
+function findAdjacentNumbers(row,col) {
+
+    var adjacentNumbers = [];
+
+    // account for * in first or last row (may not appear in the input but account for it anyway)
+    var rowStart = (row > 0) ? row-1 : row;
+    var rowEnd = (row < rows.length - 1) ? row+1 : row;
+
+    for (var curRow = rowStart; curRow <= rowEnd; ++curRow) {
+        var colStart = (col>0) ? col-1 : col;
+        var colEnd = (col < rows[curRow].length - 1) ? col+1 : col;
+
+        for(var curCol = colStart; curCol <= colEnd; ++curCol) {
+
+            var number = '';
+            if (/\d/.test(rows[curRow][curCol])) {
+                // number found
+                number = rows[curRow][curCol];
+                var numRow = curRow, numCol = curCol; // keep index of initial found number
+
+                number = buildNumber(numRow, numCol, number);
+
+                // if a number was found
+                if (number != '') {
+                    // add it to found numbers
+                    adjacentNumbers.push(number);
+
+                    // if a number was found in 1/4/6
+                    if (numCol == col-1) {
+                        // if next symbol is not a number, skip to 3/5/8
+                        if (!/\d/.test(rows[curRow][col])) {
+                            curCol++;
+                        } 
+                        // if next symbol is a number, already added to current number and don't need to check third position
+                        // skip to next row
+                        else {
+                            break;
+                        }
+                    // else skip to next row
+                    } else { 
+                        break;
+                    }
+                }
             }
-
-    	}
-    	// if gear is found
-    	else if (/[\*]/.test(c)) {
-            console.log(`gear found at position ${i}`);
-
-            var newGear = { pos: i, numbers: [] };
-
-            if (inNumber) { // gear found at end of number
-                newGear.numbers.push(parseInt(tempNum));
-                newNumbers.push({number: parseInt(tempNum), start:tempNumStart, end: i-1});
-            }
-
-            inNumber = false;
-            tempNumStart = -1;
-            tempNum = '';
-
-            adjacent = true;
-
-    	}
-    	// else reset state and finalize number if being parsed
-    	else {
 
         }
     }
 
-    // if in a number at the end of line, finalize and check adjacency
-    if (inNumber) {
+    return adjacentNumbers;
 
+}
+
+function buildNumber(row,col, number) {
+
+    var check = col; // keep original start point
+    // search backward
+    while (check > 0 && /\d/.test(rows[row][check-1])) {
+        number = rows[row][check-1] + number;
+        check--;
     }
 
-    prevRowNumbers = newNumbers;
-    prevRowGears = newGears;
+    // search forward
+    check = col;
+    while (check < rows[row].length - 1 && /\d/.test(rows[row][check+1])) {
+        number = number + rows[row][check+1];
+        check++;
+    }
 
-    rowNum++;
-    console.log('current total is: '+total);
-
-});
-
-file.on('close', () => { console.log('final total is: '+total); });
+    return number;
+}
