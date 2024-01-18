@@ -41,7 +41,7 @@
             "skipFiles": [
                 "<node_internals>/**"
             ],
-            "program": "${workspaceFolder}/day7/day7_part1.js",
+            "program": "${workspaceFolder}/day7/day7_part2.js",
             "cwd": "${workspaceFolder}/day7"
         }
     ]
