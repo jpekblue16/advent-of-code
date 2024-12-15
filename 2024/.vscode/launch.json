@@ -7,12 +7,22 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Launch Program",
+      "name": "day1",
       "skipFiles": [
         "<node_internals>/**"
       ],
-      "program": "${workspaceFolder}\\day1_part2.js",
-      "cwd":"${workspaceFolder}"
+      "program": "${workspaceFolder}\\day1\\day1_part2.js",
+      "cwd":"${workspaceFolder}\\day1"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "day2",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "program": "${workspaceFolder}\\day2\\day2_part2.js",
+      "cwd":"${workspaceFolder}\\day2"
     }
   ]
 }
