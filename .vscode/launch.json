@@ -33,6 +33,16 @@
       ],
       "program": "${workspaceFolder}\\2024\\day3\\day3_part2.js",
       "cwd":"${workspaceFolder}\\2024\\day3"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "day4",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "program": "${workspaceFolder}\\2024\\day4\\day4_part2.js",
+      "cwd":"${workspaceFolder}\\2024\\day4"
     }
   ]
 }
