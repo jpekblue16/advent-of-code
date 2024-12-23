@@ -21,10 +21,6 @@ const file = readline.createInterface({
 var grid = [];
 var start = { x: 0, y: 0 }; // tracks guard starting location
 
-// track visited obstacles by x and y positions
-var obstaclesByX = new Map();
-var obstaclesByY = new Map();
-
 var directions = ['n', 'e', 's', 'w'];
 
 var lineCount = 0; // will be used as y coordinate of grid
@@ -35,24 +31,11 @@ file.on('line', (line) => {
     switch (v) {
       case '^': // found starting pos, store it and put in map
         start = { x: i, y: lineCount };
-        return { visited: true, going: new Set(['n']) }; // store space as visited, going north
+        return { going: new Set(['n']) }; // store space as visited, going north
       case '#': // put obstacle in map
-        // store visited obstacle, keep obstacles sorted along the corresponding axis
-        var point = { x: i, y: lineCount };
-        if (obstaclesByX.has(i)) {
-          obstaclesByX.get(i).push(point);
-        } else {
-          obstaclesByX.set(i, [point]);
-        }
-
-        if (obstaclesByY.has(lineCount)) {
-          obstaclesByY.get(lineCount).push(point);
-        } else {
-          obstaclesByY.set(lineCount, [point]);
-        }
         return v;
       default: // '.'
-        return { visited: false, going: new Set() }; // store a boolean if the space has been visited, and an array of which direction it was visited in
+        return { going: new Set() }; // store a boolean if the space has been visited, and an array of which direction it was visited in
     }
   });
 
@@ -95,23 +78,21 @@ file.on('close', () => {
     curSpace.visited = true;
     curSpace.going.add(facing);
 
-    // check for any obstacles parallel to the current point in the next direction
-    // next = n: y < curY; e: x > curX; s: y > curY; w: x < curX
+    // simulate placing an obstacle
+    // search along the grid in the next direction until
+    // an edge, obstacle, or already-visited space is found
     var next = getNextDir(facing);
-
-    // find the closest obstacle in the next direction
-    var closestObstacle =
-      next == 'n' || next == 's'
-        ? getClosestObstacle(curPoint, next, obstaclesByX)
-        : getClosestObstacle(curPoint, next, obstaclesByY);
-
-    if (closestObstacle) {
-      // if the potential hit point of that obstacle has already been visited in the next direction, a loop is created
-      var hitPoint = getHitPoint(closestObstacle, next);
-      if (!isOutsideMap(hitPoint) && visitedInDirection(hitPoint, next)) {
+    var nextPoint = getNext(curPoint, next);
+    while (!isOutsideMap(nextPoint) && getSpace(nextPoint) != '#') {
+      // if visited that space in the next direction, loop found
+      if (visitedInDirection(nextPoint, next)) {
         total++;
-        console.log(total);
+        console.log(`loop ${total} found`);
+        break;
       }
+
+      // use same "next" direction to keep searching the same direction
+      nextPoint = getNext(nextPoint, next);
     }
   }
 
@@ -155,22 +136,6 @@ function getNextDir(dir) {
   return directions[(directions.indexOf(dir) + 1) % directions.length];
 }
 
-// returns the point at which the obstacle would be hit, moving in the given direction
-function getHitPoint(obstacle, dir) {
-  switch (dir) {
-    case 'n':
-      return { x: obstacle.x, y: obstacle.y + 1 };
-    case 'e':
-      return { x: obstacle.x - 1, y: obstacle.y };
-    case 's':
-      return { x: obstacle.x, y: obstacle.y - 1 };
-    case 'w':
-      return { x: obstacle.x + 1, y: obstacle.y };
-    default:
-      throw 'BAD';
-  }
-}
-
 // has the point at the given position been visited?
 // pos should be object with x and y: { x:xpos, y:ypos }
 function visitedInDirection(pos, dir) {
@@ -178,46 +143,5 @@ function visitedInDirection(pos, dir) {
     return grid[pos.y][pos.x].going.has(dir);
   } catch (e) {
     console.log(e);
-  }
-}
-
-function getClosestObstacle(pos, dir, obstacles) {
-  var mode = dir == 'n' || dir == 's' ? 'y' : 'x';
-  var perp = mode == 'y' ? 'x' : 'y'; // access map via opposite mode
-
-  if (obstacles.has(pos[perp])) {
-    var parallelObstacles = obstacles.get(pos[perp]);
-    var closest =
-      dir == 'n' || dir == 'w'
-        ? parallelObstacles[0]
-        : parallelObstacles[parallelObstacles.length - 1];
-    for (var o of parallelObstacles) {
-      switch (dir) {
-        // for N and W, closest obstacle is lower in the appropriate axis
-        case 'n':
-        case 'w':
-          if (o[mode] > pos[mode]) break;
-          else if (closest[mode] < pos[mode]) closest = o;
-          break;
-        // for E and S, closest will be greater on the appropriate axis
-        case 'e':
-        case 's':
-          if (o[mode] > pos[mode]) {
-            return o;
-            break;
-          }
-          break;
-        default:
-          throw 'BAD';
-      }
-    }
-
-    // make sure closest is in the right direction
-    if ((dir == 'n' || dir == 'w') && closest[mode] < pos[mode]) return closest;
-    else if ((dir == 'e' || dir == 's') && closest[mode] > pos[mode])
-      return closest;
-    else return;
-  } else {
-    return;
   }
 }
