@@ -11,10 +11,7 @@ const file = readline.createInterface({
 /*
   find all points where placing an obstacle creates a loop
 
-  as you follow the path, check if parallel to any already found obstacles in the next direction
-    if you have visited the space directly in front of that obstacle
-      going the same direction as the next direction
-        a loop is created
+  as you follow the path, check if placing an obstacle in front of the guard creates a loop
 */
 
 // holds map of floor, empty spaces will be boolean, obstacles/guard will still be symbols
@@ -31,11 +28,11 @@ file.on('line', (line) => {
     switch (v) {
       case '^': // found starting pos, store it and put in map
         start = { x: i, y: lineCount };
-        return { going: new Set(['n']) }; // store space as visited, going north
+        return { actual: new Set(['n']), test: new Set() }; // store space as visited, going north
       case '#': // put obstacle in map
         return v;
       default: // '.'
-        return { going: new Set() }; // store a boolean if the space has been visited, and an array of which direction it was visited in
+        return { actual: new Set(), test: new Set() }; // store a boolean if the space has been visited, and an array of which direction it was visited in
     }
   });
 
@@ -46,7 +43,7 @@ file.on('line', (line) => {
 
 // follow guard's path, marking newly seen empty spaces
 file.on('close', () => {
-  var total = 0; // total spaces visited, including start location
+  var total = 0; // tracks number of obstacles that cause a loop
 
   // track path until guard reaches edge of map
   var facing = 'n'; // guard starts facing north
@@ -58,7 +55,7 @@ file.on('close', () => {
     var targetPoint = getNext(curPoint, facing);
 
     // check if target is outside map
-    if (isOutsideMap(targetPoint, grid[0].length - 1, grid.length - 1)) break;
+    if (isOutsideMap(targetPoint)) break;
 
     // check the target point
     // if obstacle, turn
@@ -67,33 +64,21 @@ file.on('close', () => {
     if (targetSpace === '#') {
       // obstacle
       facing = getNextDir(facing); // get next direction
-      curSpace.going.add(facing); // 'visit' current space in new direction
+      curSpace.actual.add(facing); // 'visit' current space in new direction
       continue;
     }
+
+    // check if placing an obstacle at target causes a loop
+    var holdTarget = targetSpace;
+    grid[targetPoint.y][targetPoint.x] = '#';
+    if (causesLoop(curPoint, facing)) total++;
+    grid[targetPoint.y][targetPoint.x] = holdTarget;
 
     // move to the target
     curPoint = targetPoint;
     curSpace = getSpace(curPoint);
 
-    curSpace.visited = true;
-    curSpace.going.add(facing);
-
-    // simulate placing an obstacle
-    // search along the grid in the next direction until
-    // an edge, obstacle, or already-visited space is found
-    var next = getNextDir(facing);
-    var nextPoint = getNext(curPoint, next);
-    while (!isOutsideMap(nextPoint) && getSpace(nextPoint) != '#') {
-      // if visited that space in the next direction, loop found
-      if (visitedInDirection(nextPoint, next)) {
-        total++;
-        console.log(`loop ${total} found`);
-        break;
-      }
-
-      // use same "next" direction to keep searching the same direction
-      nextPoint = getNext(nextPoint, next);
-    }
+    curSpace.actual.add(facing);
   }
 
   console.log(total);
@@ -138,10 +123,58 @@ function getNextDir(dir) {
 
 // has the point at the given position been visited?
 // pos should be object with x and y: { x:xpos, y:ypos }
-function visitedInDirection(pos, dir) {
+function visitedInDirection(pos, dir, test_actual) {
   try {
-    return grid[pos.y][pos.x].going.has(dir);
+    return grid[pos.y][pos.x][test_actual].has(dir);
   } catch (e) {
     console.log(e);
   }
+}
+
+function resetTestGrid() {
+  // set all spaces according to the "actual" state
+  grid.map((v, i) => {
+    v.map((v1, i1) => {
+      if (v1 !== '#') {
+        v1.test = new Set(v1.actual);
+      }
+    });
+  });
+}
+
+// returns true if exploring the grid from the given point causes a loop
+function causesLoop(start, dir) {
+  resetTestGrid(); // start from path actually traveled so far
+
+  var curPoint = start;
+  var curSpace = getSpace(curPoint);
+  var facing = dir;
+  var targetPoint = start;
+  while (1) {
+    // proceed around the grid normally
+
+    targetPoint = getNext(curPoint, facing);
+
+    if (isOutsideMap(targetPoint)) break;
+
+    if (getSpace(targetPoint) === '#') {
+      // obstacle hit, turn
+      facing = getNextDir(facing);
+      curSpace.test.add(facing);
+      continue;
+    }
+
+    // check if target point has already been traveled in the current direction
+    if (visitedInDirection(targetPoint, facing, 'test')) {
+      return true;
+    }
+
+    // move to next space
+    curPoint = targetPoint;
+    curSpace = getSpace(curPoint);
+    curSpace.test.add(facing);
+  }
+
+  // guard reaches edge of map, no loop
+  return false;
 }
