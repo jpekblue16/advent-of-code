@@ -16,7 +16,7 @@ const file = readline.createInterface({
 
 // holds map of floor, empty spaces will be boolean, obstacles/guard will still be symbols
 var grid = [];
-var start = { x: 0, y: 0 }; // tracks guard starting location
+var startPos = { x: 0, y: 0 }; // tracks guard starting location
 
 var directions = ['n', 'e', 's', 'w'];
 
@@ -27,7 +27,7 @@ file.on('line', (line) => {
   var mapLine = Array.from(line.split(''), (v, i) => {
     switch (v) {
       case '^': // found starting pos, store it and put in map
-        start = { x: i, y: lineCount };
+        startPos = { x: i, y: lineCount };
         return { actual: new Set(['n']), test: new Set() }; // store space as visited, going north
       case '#': // put obstacle in map
         return v;
@@ -47,7 +47,7 @@ file.on('close', () => {
 
   // track path until guard reaches edge of map
   var facing = 'n'; // guard starts facing north
-  var curPoint = { x: start.x, y: start.y };
+  var curPoint = { x: startPos.x, y: startPos.y };
   var curSpace = getSpace(curPoint);
 
   // maintain same pathing as part 1, check for loops created along the path
@@ -69,10 +69,13 @@ file.on('close', () => {
     }
 
     // check if placing an obstacle at target causes a loop
-    var holdTarget = targetSpace;
-    grid[targetPoint.y][targetPoint.x] = '#';
-    if (causesLoop(curPoint, facing)) total++;
-    grid[targetPoint.y][targetPoint.x] = holdTarget;
+    // don't test position if already traveled
+    if (targetSpace.actual.size == 0) {
+      var holdTarget = targetSpace;
+      grid[targetPoint.y][targetPoint.x] = '#';
+      if (causesLoop(curPoint, facing)) total++;
+      grid[targetPoint.y][targetPoint.x] = holdTarget;
+    }
 
     // move to the target
     curPoint = targetPoint;
@@ -86,11 +89,7 @@ file.on('close', () => {
 
 // returns the space at the given position
 function getSpace(pos) {
-  try {
     return grid[pos.y][pos.x];
-  } catch (e) {
-    console.log(e);
-  }
 }
 
 function getNext(point, facing) {
@@ -123,9 +122,9 @@ function getNextDir(dir) {
 
 // has the point at the given position been visited?
 // pos should be object with x and y: { x:xpos, y:ypos }
-function visitedInDirection(pos, dir, test_actual) {
+function visitedInDirection(pos, dir) {
   try {
-    return grid[pos.y][pos.x][test_actual].has(dir);
+    return grid[pos.y][pos.x].test.has(dir);
   } catch (e) {
     console.log(e);
   }
@@ -149,23 +148,23 @@ function causesLoop(start, dir) {
   var curPoint = start;
   var curSpace = getSpace(curPoint);
   var facing = dir;
-  var targetPoint = start;
   while (1) {
     // proceed around the grid normally
 
-    targetPoint = getNext(curPoint, facing);
+    var targetPoint = getNext(curPoint, facing);
 
     if (isOutsideMap(targetPoint)) break;
 
     if (getSpace(targetPoint) === '#') {
       // obstacle hit, turn
       facing = getNextDir(facing);
+      if (visitedInDirection(curPoint, facing)) return true;
       curSpace.test.add(facing);
       continue;
     }
 
     // check if target point has already been traveled in the current direction
-    if (visitedInDirection(targetPoint, facing, 'test')) {
+    if (visitedInDirection(targetPoint, facing)) {
       return true;
     }
 
