@@ -29,11 +29,13 @@ file.on('line', (line) => {
   // generate data array
   var dataArray = generateDataArray(line);
 
-  //console.log(dataArray.join(''));
+  // console.log(dataArray.join(''));
 
   // create processed array
   // processed array will have file IDs in order as integers
   processData(dataArray);
+
+  // console.log(dataArray.join(''));
 
   //calculate checksum
   // skip over any blanks, otherwise add product to sum
@@ -55,13 +57,22 @@ function generateDataArray(input) {
   for (var i = 0; i < input.length; ++i) {
     var count = parseInt(input.at(i));
 
+    if (count == 0 && insertDigits) console.log(' empty file ');
+
     var data = Array(count).fill(insertDigits ? counter++ : '.');
 
     result.push(...data);
 
     // if empty, add to space array
-    if (!insertDigits && count > 0)
-      emptySpaces.push({ index: index, size: count });
+    if (!insertDigits && count > 0) {
+      // check for previous consecutive empty space
+      var prevSpace = emptySpaces.at(-1);
+      if (emptySpaces.length > 0 && prevSpace.index + prevSpace.size == index) {
+        prevSpace.size += count;
+      } else {
+        emptySpaces.push({ index: index, size: count });
+      }
+    }
 
     index += count;
     insertDigits = !insertDigits;
@@ -89,6 +100,9 @@ function processData(data) {
     // loop over empty space array and check size
     var space = undefined;
     for (var i of emptySpaces) {
+      // only look at empty space to the left of the file
+      if (i.index > index) break;
+
       if (i.size > 0 && fileSize <= i.size) {
         space = i;
         break;
@@ -107,6 +121,8 @@ function processData(data) {
       space.size -= fileSize;
       space.index += fileSize;
     }
+
+    //console.log(data.join(''));
 
     // find next file
     id--;
