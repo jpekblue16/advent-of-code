@@ -97,7 +97,7 @@
       "request": "launch",
       "name": "day12",
       "skipFiles": ["<node_internals>/**"],
-      "program": "${workspaceFolder}\\2024\\day12\\day12_part1.js",
+      "program": "${workspaceFolder}\\2024\\day12\\day12_part2.js",
       "cwd": "${workspaceFolder}\\2024\\day12"
     }
   ]
