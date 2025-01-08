@@ -2,14 +2,14 @@ const fs = require('node:fs');
 const readline = require('readline');
 
 const file = readline.createInterface({
-  input: fs.createReadStream('day14_test.txt'),
+  input: fs.createReadStream('day14_input.txt'),
   output: process.stdout,
   terminal: false,
 });
 
 // simulate robots after 100 steps
-const WIDTH = 11,
-  HEIGHT = 7;
+const WIDTH = 101,
+  HEIGHT = 103;
 
 var robots = [];
 
@@ -53,13 +53,19 @@ function treeFound() {
     for (var j = 0; j < WIDTH; ++j) {
       var cur = grid[i][j];
       if (!cur.visited && cur.isBot) {
-        var blockSize = findBlock(i, j, grid);
+        var blockSize = findBlock(j, i, grid);
 
         // if block size is over the threshold, tree found
-        if (blockSize >= robots.length * TREE_RATIO) return true;
+        if (blockSize >= robots.length * TREE_RATIO) {
+          printGrid(grid);
+          return true;
+        }
 
-        // also look for 3x3 grid of bots
-        if (isSurrounded(i, j, grid)) return true;
+        // also look for 3x3 grid of bots, count that as tree
+        if (isSurrounded(j, i, grid)) {
+          printGrid(grid);
+          return true;
+        }
       }
     }
   }
@@ -69,8 +75,8 @@ function treeFound() {
 
 function advanceBots() {
   for (var bot of robots) {
-    bot.pos.x = nextPos(bot.position.x, bot.velocity.dx, WIDTH);
-    bot.pos.y = nextPos(bot.position.y, bot.velocity.dy, HEIGHT);
+    bot.position.x = nextPos(bot.position.x, bot.velocity.dx, WIDTH);
+    bot.position.y = nextPos(bot.position.y, bot.velocity.dy, HEIGHT);
   }
 }
 
@@ -108,8 +114,12 @@ function isSurrounded(x, y, grid) {
   var adjacent = getAdjacent(x, y);
 
   // if any adjacent point does not have a bot, return false
-  for (var point of adjacent) {
-    if (!grid[point.y][point.x].isBot) return false;
+  try {
+    for (var point of adjacent) {
+      if (!grid[point.y][point.x].isBot) return false;
+    }
+  } catch (e) {
+    throw e;
   }
   return true;
 }
@@ -117,13 +127,24 @@ function isSurrounded(x, y, grid) {
 // returns an array of all 8 surrounding positions
 function getAdjacent(x_in, y_in) {
   return [
-    { x: x_in - 1, y: y_in + 1 },
-    { x: x_in, y: y_in + 1 },
-    { x: x_in + 1, y: y_in + 1 },
+    { x: x_in - 1, y: y_in - 1 },
+    { x: x_in, y: y_in - 1 },
+    { x: x_in + 1, y: y_in - 1 },
     { x: x_in - 1, y: y_in },
     { x: x_in + 1, y: y_in },
     { x: x_in - 1, y: y_in + 1 },
     { x: x_in, y: y_in + 1 },
     { x: x_in + 1, y: y_in + 1 },
   ];
+}
+
+// grid is 2d matrix, will print X if bot is on space, . if not
+function printGrid(grid) {
+  for (var row of grid) {
+    var rowString = '';
+    for (var col of row) {
+      rowString += col.isBot ? 'X' : '.';
+    }
+    console.log(rowString);
+  }
 }
