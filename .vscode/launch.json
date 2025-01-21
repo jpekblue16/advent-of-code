@@ -155,6 +155,14 @@
       "skipFiles": ["<node_internals>/**"],
       "program": "${workspaceFolder}\\2024\\day19\\day19_part2.js",
       "cwd": "${workspaceFolder}\\2024\\day19"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "day20",
+      "skipFiles": ["<node_internals>/**"],
+      "program": "${workspaceFolder}\\2024\\day20\\day20_part1.js",
+      "cwd": "${workspaceFolder}\\2024\\day20"
     }
   ]
 }
