@@ -6,6 +6,7 @@
   "configurations": [
     {
       "type": "node",
+      "runtimeVersion": "22.12.0",
       "request": "launch",
       "name": "day1",
       "skipFiles": ["<node_internals>/**"],
@@ -185,7 +186,7 @@
       "request": "launch",
       "name": "day23",
       "skipFiles": ["<node_internals>/**"],
-      "program": "${workspaceFolder}\\2024\\day23\\day23_part1.js",
+      "program": "${workspaceFolder}\\2024\\day23\\day23_part2.js",
       "cwd": "${workspaceFolder}\\2024\\day23"
     }
   ]

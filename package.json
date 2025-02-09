@@ -1,0 +1,8 @@
+{
+  "devDependencies": {
+    "@types/node": "^23.7.0"
+  },
+  "dependencies": {
+    "npm": "^11.1.0"
+  }
+}
