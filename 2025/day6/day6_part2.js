@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 const readline = require('readline');
 
-const TESTING = true;
+const TESTING = false;
 
 const file = readline.createInterface({
   input: fs.createReadStream(TESTING ? 'test.txt' : 'input.txt'),
@@ -33,6 +33,12 @@ file.on('line', (line) => {
   lines.push(line);
 });
 
+function doOperation(operands, operator) {
+  return operator == '+'
+    ? operands.reduce((a, v) => a + v, 0)
+    : operands.reduce((a, v) => a * v, 1);
+}
+
 file.on('close', () => {
   // step through all lines
   // each column represents one operand
@@ -58,5 +64,14 @@ file.on('close', () => {
     }
 
     // get next operand
+    var number = '';
+    for (var j = 0; j < lines.length - 1; ++j) {
+      number += lines[j].at(i);
+    }
+    if (number.trim() != '') operands.push(Number(number.trim()));
   }
+
+  total += doOperation(operands, curOp);
+
+  console.log(total);
 });
