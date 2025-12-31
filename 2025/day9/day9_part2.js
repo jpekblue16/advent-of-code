@@ -55,20 +55,48 @@ other corners must be either:
           i.x < p.x && i.y < p.y
 */
 
-// read in list of points
-// points will always form a straight line with prev/next points
-// i.e. either x or y coord will be same
+// track minimum and maximum bounds at a given row/column?
 
+// track list of points
 var points = [];
+
+// track min and max values for each row
+var rowRanges = new Map();
 
 file.on('line', (line) => {
   // read in list of points (corners of shape)
   var coord = line.split(',').map((v) => Number(v));
-  points.push({ x: coord[0], y: coord[1] });
+  var p = { x: coord[0], y: coord[1] };
+  points.push(p);
+
+  // set min and max ranges for all rows between this point and previous point
+  // if y values are equal, only that row will be checked
+  var prev = points[points.length - 2];
+  for (var i = Math.min(prev.y, p.y); i <= Math.max(prev.y, p.y); ++i) {
+    // check against range for that row
+
+    // if not in map, add with both min/max as p.x
+    if (!rowRanges.has(i)) {
+      rowRanges.set(i, {
+        min: Math.min(p.x, prev.x),
+        max: Math.max(p.x, prev.x),
+      });
+    }
+    // if row is already in map, check min and max against p
+    else {
+    }
+  }
 });
 
 // determines if point p is within the shape - see comment block above
-function withinShape(p) {}
+function withinShape(p) {
+  if (rowRanges.has(p.y)) {
+    var range = rowRanges.get(p.y);
+    return range.min <= p.x && p.x <= range.max;
+  }
+
+  return false;
+}
 
 file.on('close', () => {
   var maxArea = 0;
