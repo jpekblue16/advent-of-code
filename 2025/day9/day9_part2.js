@@ -43,16 +43,6 @@ other corners must be either:
     point p will have x and y values that are in the same row as a given point
     one of the other corners must also be a given point
     lowest X or Y value is ~3000 ie not close to edge
-
-    hypothesis:
-      a given point p is within the shape if:
-        it is given within the input or;
-        it is between two given points;
-        there is are points i given in the input for each of these:
-          i.x > p.x && i.y > p.y
-          i.x > p.x && i.y < p.y
-          i.x < p.x && i.y > p.y
-          i.x < p.x && i.y < p.y
 */
 
 // track minimum and maximum bounds at a given row/column?
@@ -71,19 +61,25 @@ file.on('line', (line) => {
 
   // set min and max ranges for all rows between this point and previous point
   // if y values are equal, only that row will be checked
-  var prev = points[points.length - 2];
+  var prev = points.length > 1 ? points[points.length - 2] : p;
   for (var i = Math.min(prev.y, p.y); i <= Math.max(prev.y, p.y); ++i) {
     // check against range for that row
+    var minX = Math.min(p.x, prev.x);
+    var maxX = Math.max(p.x, prev.x);
 
     // if not in map, add with both min/max as p.x
     if (!rowRanges.has(i)) {
       rowRanges.set(i, {
-        min: Math.min(p.x, prev.x),
-        max: Math.max(p.x, prev.x),
+        min: minX,
+        max: maxX,
       });
     }
     // if row is already in map, check min and max against p
     else {
+      var range = rowRanges.get(i);
+
+      range.min = Math.min(minX, range.min);
+      range.max = Math.max(maxX, range.max);
     }
   }
 });
@@ -98,8 +94,47 @@ function withinShape(p) {
   return false;
 }
 
+function getArea(a, b) {
+  var xLength = Math.abs(a.x - b.x) + 1;
+  var yLength = Math.abs(a.y - b.y) + 1;
+
+  return xLength * yLength;
+}
+
 file.on('close', () => {
   var maxArea = 0;
+
+  // connect wrap around edge
+  var last = points[points.length - 1];
+  var first = points[0];
+  for (var i = Math.min(first.y, last.y); i <= Math.max(first.y, last.y); ++i) {
+    // all rows will be within map
+    var range = rowRanges.get(i);
+    if (Math.min(first.x, last.x) < range.min)
+      range.min = Math.min(first.x, last.x);
+    if (Math.max(first.x, last.x) > range.max)
+      range.max = Math.max(first.x, last.x);
+  }
+
+  // loop over all points
+  for (var i = 0; i < points.length - 1; ++i) {
+    // check recrangle made by using each other point as the diagonal corner
+    for (var j = i + 1; j < points.length; ++j) {
+      // get all corners of the rectangle
+      var pointA = points[i];
+      var pointB = points[j];
+
+      // (when comparing adjacent points, other corners should be the same as A and B)
+      var otherCornerA = { x: pointA.x, y: pointB.y };
+      var otherCornerB = { x: pointB.x, y: pointA.y };
+
+      // if both other corners are within the shape, check area
+      if (withinShape(otherCornerA) && withinShape(otherCornerB)) {
+        // check if area is greater than max
+        maxArea = Math.max(maxArea, getArea(pointA, pointB));
+      }
+    }
+  }
 
   console.log(maxArea);
 });
